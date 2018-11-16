@@ -1,0 +1,225 @@
+<head>
+	<style type="text/css">
+		button{
+			height: 100px
+		}
+	</style>
+	<script type="text/javascript"></script>
+</head>
+
+<body>
+	<div style="width: 100%; position: absolute;">
+		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:400px"/>
+		<svg id="coversvg" style="border:solid; position: absolute; left: 0px; top: 0px">
+			<rect id='dragRect' style="stroke: black; stroke-width: 2px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
+		</svg>
+	</div>
+
+	<div style="position: absolute; float: right;right: 700;">
+
+	<!-- 	'body': '#ff0000', 
+		'label': '#00ff00', 
+		'text': '#0000ff', 
+		'decoration': '#f0000f' -->
+		<button id="body" label="body" onclick='setLabel("body")' style="background: #ff0000">body</button>
+		<button id="label" label="label" onclick='setLabel("label")' style="background: #00ff00">label</button>
+		<button id="text" label="text" onclick='setLabel("text")' style="background: #0000ff">text</button>
+		<button id="decoration" label="decoration" onclick='setLabel("decoration")' style="background: #f0b100">decoration</button>
+		<button id="nextimg" onclick='nextImg()'>Next Img</button>
+		<button id="nextimg" onclick='updateCover()'>Update</button>
+	</div>
+</body>
+
+<script type="text/javascript" src="./lib/d3.js"></script>
+<script type="text/javascript" src="./lib/jquery.js"></script>
+<script type="text/javascript" src="./lib/lurlquery.js"></script>
+
+<script type="text/javascript">
+	g_Reader = -1
+	g_pureImgNameList = [];
+	g_imgNameList = []
+	g_Pos1 = g_Pos2 = []
+	b_finished = false;
+
+	g_labelImgName = "";
+	g_liLabel = [];
+
+	function initImgList(){
+		d3.csv('./imglib/tolabelimg.csv', function(data){
+			var liLabeled = []
+			d3.csv('./imglib/labellist.csv', function(data1){
+				for(i = 0; i < data1.length; i ++)
+					liLabeled.push(data1[i].name)
+
+			    console.log('labeled list', liLabeled)
+				for(var i = 0; i < data.length; i ++){
+					if(liLabeled.length == 0 || liLabeled.indexOf(data[i].name) == -1){
+						testImgDir = './imglib/' + data[i].name
+						g_imgNameList.push(testImgDir); 
+						g_pureImgNameList.push(data[i].name);
+					}else{
+						console.log(' no ')
+					}
+				}
+				nextImg();
+			})
+		})
+
+	}
+
+	function nextImg(){
+		g_Reader += 1
+
+		d3.selectAll('.labeled').remove()
+		d3.select("#dragRect").style('width', 0).style('height', 0)
+
+		if(g_labelImgName != ""){
+			//save label to local file
+			console.log('save', g_labelImgName, JSON.stringify(g_liLabel));
+			var formData = new FormData()
+			formData.append('name', g_labelImgName);
+			formData.append('labels', JSON.stringify(g_liLabel))
+			lSendUrl('POST', 'http://localhost:20343/save', formData, successSave)
+		}
+
+		if(g_imgNameList.length <= g_Reader){
+			g_Reader = 0
+		}
+
+		if(g_imgNameList.length < g_Reader){
+			alert('finished')
+		}else{
+			g_labelImgName = g_pureImgNameList[g_Reader]
+			$('img').attr('src', g_imgNameList[g_Reader])
+			console.log(" label name ", g_labelImgName)
+			updateCover()
+		}
+		g_liLabel = [];
+		g_Pos1 = g_Pos2 = []
+	}
+	function successSave(response, self){
+		console.log(response);
+	}
+	function updateCover(){
+		imgBox = $('img')[0].getBoundingClientRect()
+		console.log(' img box ', imgBox)
+		d3.select('svg')
+		  .style('width', imgBox.width)
+		  .style('height', imgBox.height);
+	}
+	function initBrush(){
+
+		d3.select('svg')
+		  .on('mousedown', function(e){
+		  	var x = d3.event.pageX - document.getElementById('coversvg').getBoundingClientRect().x
+			var y = d3.event.pageY - document.getElementById('coversvg').getBoundingClientRect().y
+			g_Pos1 = [x, y]
+			b_finished = false;
+		  })
+		  .on('mousemove', function(e){
+		  	var x = d3.event.pageX - document.getElementById('coversvg').getBoundingClientRect().x
+			var y = d3.event.pageY - document.getElementById('coversvg').getBoundingClientRect().y
+
+			if(g_Pos1.length != 0 && !b_finished){
+			  	g_Pos2 = [x, y]
+
+			  	//update the rect
+			  	d3.select('#dragRect')
+			  	  .style('x', g_Pos2[0] < g_Pos1[0] ? g_Pos2[0] : g_Pos1[0])
+			  	  .style('y', g_Pos2[1] < g_Pos1[1] ? g_Pos2[1] : g_Pos1[1])
+			  	  .style('width', g_Pos2[0] < g_Pos1[0] ? g_Pos1[0] - g_Pos2[0] : g_Pos2[0] - g_Pos1[0])
+			  	  .style('height', g_Pos2[1] < g_Pos1[1] ? g_Pos1[1] - g_Pos2[1] : g_Pos2[1] - g_Pos1[1])
+		  	}
+
+		  })
+		  .on('mouseup', function(e){
+		  	var x = d3.event.pageX - document.getElementById('coversvg').getBoundingClientRect().x
+			var y = d3.event.pageY - document.getElementById('coversvg').getBoundingClientRect().y
+		  	g_Pos2 = [x, y]
+
+		  	//update the rect
+		  	d3.select('#dragRect')
+		  	  .style('x', g_Pos2[0] < g_Pos1[0] ? g_Pos2[0] : g_Pos1[0])
+		  	  .style('y', g_Pos2[1] < g_Pos1[1] ? g_Pos2[1] : g_Pos1[1])
+		  	  .style('width', g_Pos2[0] < g_Pos1[0] ? g_Pos1[0] - g_Pos2[0] : g_Pos2[0] - g_Pos1[0])
+		  	  .style('height', g_Pos2[1] < g_Pos1[1] ? g_Pos1[1] - g_Pos2[1] : g_Pos2[1] - g_Pos1[1])
+		  	  b_finished = true
+		  })
+	}
+
+</script>
+
+<script type="text/javascript">
+	initImgList();
+	initBrush();
+</script>
+
+<script type="text/javascript">	
+
+	var mapLabel = {
+		'body': ['#ff0000', 0], 
+		'label':['#00ff00', 1], 
+		'text': ['#0000ff', 2],
+		'decoration': ['#f0b100', 3]
+	}
+
+	function setLabel(labelName){
+		console.log(' labelName ', labelName);
+
+		if(g_Pos1 == g_Pos2){
+			alert('please define rect')
+			return 
+		}
+
+		d3.select('#dragRect')
+		  .style('stroke', mapLabel[labelName][0]);
+
+		var dragBox = $('#dragRect')[0].getBoundingClientRect()
+		var imgBox = $('img')[0].getBoundingClientRect()
+		var left = g_Pos1[0] < g_Pos2[0] ? g_Pos1[0] : g_Pos2[0]
+		var top = g_Pos1[1] < g_Pos2[1] ? g_Pos1[1] : g_Pos2[1]
+		var width =  (g_Pos1[0] > g_Pos2[0] ? g_Pos1[0] : g_Pos2[0]) - left
+		var height = (g_Pos1[1] > g_Pos2[1] ? g_Pos1[1] : g_Pos2[1]) - top
+		
+		if(g_liLabel.length > 0){
+			var lastOne = g_liLabel[g_liLabel.length - 1]
+			
+			if(lastOne[1] - (left/imgBox.width) < 1e-6 && lastOne[2] - (top/imgBox.height) < 1e-6 && lastOne[3] - (width/imgBox.width) < 1e-6 && lastOne[4] - height/imgBox.height < 1e-6){
+
+				console.log('[2] ', mapLabel[labelName][1])
+
+				g_liLabel[g_liLabel.length - 1][0] = mapLabel[labelName][1];
+
+				d3.select('#labeled-' + g_liLabel.length)
+				  .style('fill', 'none')
+				  .style('stroke', mapLabel[labelName][0])
+
+				 console.log('global !!', g_liLabel);
+
+				return;
+			}
+		}
+
+
+		g_liLabel.push(
+			[mapLabel[labelName][1], left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height]
+		)
+
+		console.log(' glabel ', g_liLabel);
+
+		d3.select('svg')
+		  .append('rect')
+		  .attr('class', 'labeled')
+		  .attr('id', 'labeled-' + g_liLabel.length)
+		  .attr('width', width)
+		  .attr('height', height)
+		  .attr('x', left)
+		  .attr('y', top)
+		  .style('fill', 'none')
+		  .style('stroke', mapLabel[labelName][0])
+
+		console.log('g_Pos1', g_Pos1, g_Pos2)
+		console.log('rect', g_labelImgName, left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height)
+
+	}
+</script>
