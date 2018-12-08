@@ -10,10 +10,12 @@ from handler.pointhandler import IndexHandler
 from handler.pointhandler import TestHandler
 from handler.pointhandler import ImgHandler
 from handler.pointhandler import SaveHandler
+from handler.pointhandler import GetHandler
 
 url=[
 	(r'/', IndexHandler),
     # (r'/test/(\w+)', TestHandler),
     (r'/getImgList', ImgHandler),
     (r'/save', SaveHandler),
+    (r'/get', GetHandler),
 ]

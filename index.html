@@ -10,23 +10,23 @@
 <body>
 	<div style="width: 100%; position: absolute;">
 		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:400px"/>
-		<svg id="coversvg" style="border:solid; position: absolute; left: 0px; top: 0px">
-			<rect id='dragRect' style="stroke: black; stroke-width: 2px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
+		<svg id="coversvg" style="background:#ff00002b; position: absolute; left: 0px; top: 0px">
+			<rect id='dragRect' style="stroke: black; stroke-width: 1px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
 		</svg>
 	</div>
 
-	<div style="position: absolute; float: right;right: 700;">
-
-	<!-- 	'body': '#ff0000', 
-		'label': '#00ff00', 
-		'text': '#0000ff', 
-		'decoration': '#f0000f' -->
-		<button id="body" label="body" onclick='setLabel("body")' style="background: #ff0000">body</button>
-		<button id="label" label="label" onclick='setLabel("label")' style="background: #00ff00">label</button>
-		<button id="text" label="text" onclick='setLabel("text")' style="background: #0000ff">text</button>
-		<button id="decoration" label="decoration" onclick='setLabel("decoration")' style="background: #f0b100">decoration</button>
+	<div style="position: absolute; float: right;right:70%;">
+		<li id="labelList">
+			<!-- <button id="bar" label="bar" onclick='setLabel("bar")' style="background: #ff0000; height:50px">bar</button>
+			<button id="pie" label="label" onclick='setLabel("pie")' style="background: #00ff00; height:50px">pie</button>
+			<button id="map" label="label" onclick='setLabel("map")' style="background: #00ff00; height:50px">map</button>
+			<button id="text" label="text" onclick='setLabel("text")' style="background: #0000ff; height:50px">text</button> -->
+			<!-- <button id="decoration" label="decoration" onclick='setLabel("decoration")' style="background: #f0b100; height:50px">decoration</button> -->
+		</li>
 		<button id="nextimg" onclick='nextImg()'>Next Img</button>
-		<button id="nextimg" onclick='updateCover()'>Update</button>
+		<button id="updateimg" onclick='updateCover()'>Update Box</button>
+		<br>
+		<span id="infoSpan"></span>
 	</div>
 </body>
 
@@ -35,9 +35,25 @@
 <script type="text/javascript" src="./lib/lurlquery.js"></script>
 
 <script type="text/javascript">
+	
+	G_liLabel = ['pie', 'bar', 'map', 'text',  'modi']
+	G_liColor = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628']
+
+	for(var i = 0; i < G_liLabel.length; i ++){
+		var str_temp = '<button id="' + G_liLabel[i] + '" label="' + G_liLabel[i] + '" onclick=\'setLabel("' + G_liLabel[i] + '")\' style="margin:2px; background:' + G_liColor[i] + '">' + G_liLabel[i] + '</button>'
+		console.log(' string ', str_temp)
+		document.getElementById('labelList').innerHTML += str_temp
+	}
+
 	g_Reader = -1
-	g_pureImgNameList = [];
-	g_imgNameList = []
+
+	g_liImg = []
+	g_liLabeledImg = []
+	g_liUnLabelImg = []
+	g_mapImgNameDir = {}
+
+	// g_pureImgNameList = [];
+	// g_imgNameList = []
 	g_Pos1 = g_Pos2 = []
 	b_finished = false;
 
@@ -45,29 +61,61 @@
 	g_liLabel = [];
 
 	function initImgList(){
-		d3.csv('./imglib/tolabelimg.csv', function(data){
-			var liLabeled = []
-			d3.csv('./imglib/labellist.csv', function(data1){
-				for(i = 0; i < data1.length; i ++)
-					liLabeled.push(data1[i].name)
 
-			    console.log('labeled list', liLabeled)
-				for(var i = 0; i < data.length; i ++){
-					if(liLabeled.length == 0 || liLabeled.indexOf(data[i].name) == -1){
-						testImgDir = './imglib/' + data[i].name
-						g_imgNameList.push(testImgDir); 
-						g_pureImgNameList.push(data[i].name);
-					}else{
-						console.log(' no ')
-					}
-				}
-				nextImg();
-			})
-		})
+		getImgList();
+
+		// d3.csv('./imglib/tolabelimg.csv', function(data){
+		// 	var liLabeled = []
+		// 	d3.csv('./imglib/labellist.csv', function(data1){
+		// 		for(i = 0; i < data1.length; i ++)
+		// 			liLabeled.push(data1[i].name)
+
+		// 	    console.log('labeled list', liLabeled)
+		// 		for(var i = 0; i < data.length; i ++){
+		// 			if(liLabeled.length == 0 || liLabeled.indexOf(data[i].name) == -1){
+		// 				testImgDir = './imglib/' + data[i].name
+		// 				g_imgNameList.push(testImgDir); 
+		// 				g_pureImgNameList.push(data[i].name);
+		// 			}else{
+		// 				console.log(' no ')
+		// 			}
+		// 		}
+		// 		nextImg();
+		// 	})
+		// })
 
 	}
 
+	function getImgList(){
+		var formData = new FormData()
+		lSendUrl('POST', 'http://localhost:20343/getImgList', formData, successGet)
+	}
+
+	function getLabelbyId(id){
+		for(var label in mapLabel){
+			if(Number(mapLabel[label][1]) == id)
+				return label
+		}
+		return undefined
+	}
+
+	function successGet(response, self){
+		g_liImg = Object.keys(response['img'])
+		g_liLabeledImg = Object.keys(response['label'])
+		g_mapImgNameDir = response['img']
+		g_liUnLabelImg = []
+		for(var i = 0; i < g_liImg.length; i ++){
+			if(g_liLabeledImg.indexOf(g_liImg[i]) == -1)
+				g_liUnLabelImg.push(g_liImg[i])
+		}
+		console.log('#img=', g_liImg.length, ' #label=', g_liLabeledImg.length, ' #unlabel=', g_liUnLabelImg.length, g_liLabeledImg);		
+		nextImg();
+	}
+
 	function nextImg(){
+
+		document.getElementById('infoSpan').innerHTML = ('#img=' + g_liImg.length +' #label=' + g_liLabeledImg.length + ' #unlabel=' + g_liUnLabelImg.length);
+
 		g_Reader += 1
 
 		d3.selectAll('.labeled').remove()
@@ -75,26 +123,80 @@
 
 		if(g_labelImgName != ""){
 			//save label to local file
-			console.log('save', g_labelImgName, JSON.stringify(g_liLabel));
-			var formData = new FormData()
-			formData.append('name', g_labelImgName);
-			formData.append('labels', JSON.stringify(g_liLabel))
-			lSendUrl('POST', 'http://localhost:20343/save', formData, successSave)
+			if(g_liLabel.length > 0){
+				console.log('save', g_labelImgName, JSON.stringify(g_liLabel));
+				//update 
+				console.log('unlabel index = ', g_liUnLabelImg.indexOf(g_labelImgName))
+				g_liUnLabelImg.splice(g_liUnLabelImg.indexOf(g_labelImgName), 1)
+				console.log('unlabel index = ', g_liUnLabelImg.indexOf(g_labelImgName))
+				var formData = new FormData()
+				formData.append('name', g_labelImgName);
+				formData.append('labels', JSON.stringify(g_liLabel))
+				lSendUrl('POST', 'http://localhost:20343/save', formData, successSave)
+				g_liLabel = []
+			}
 		}
 
-		if(g_imgNameList.length <= g_Reader){
+		if(g_liImg.length <= g_Reader){
 			g_Reader = 0
 		}
 
-		if(g_imgNameList.length < g_Reader){
+		if(g_liUnLabelImg.length == 0){
 			alert('finished')
 		}else{
-			g_labelImgName = g_pureImgNameList[g_Reader]
-			$('img').attr('src', g_imgNameList[g_Reader])
-			console.log(" label name ", g_labelImgName)
-			updateCover()
+			g_labelImgName = g_liImg[g_Reader]
+			console.log("[current img] ", g_Reader, g_labelImgName, g_liLabeledImg)
+			$('img').attr('src', g_mapImgNameDir[g_labelImgName])
+			if(g_liLabeledImg.indexOf(g_labelImgName) != -1){
+				console.log('[exist label] ', './imglabel/' + g_labelImgName + '.txt')
+
+				var formData = new FormData()
+				formData.append('name', g_labelImgName);
+				lSendUrl('POST', 'http://localhost:20343/get', formData, function(response){
+					g_liLabel = response['labels']
+					console.log("[get labels] ", g_liLabel)
+
+					var imgBox = $('img')[0].getBoundingClientRect()
+					console.log(' img box = ', imgBox)
+
+					d3.select('svg')
+					  .selectAll('.labeled')
+					  .data(g_liLabel)
+					  .enter()
+					  .append('rect')
+					  .attr('class', 'labeled')
+					  .attr('id', function(d, i){
+					  	return 'labeled-' + i
+					  })
+					  .attr('width', function(d){
+					  	return d[3] * imgBox.width
+					  })
+					  .attr('height', function(d){
+					  	return d[4] * imgBox.height
+					  })
+					  .attr('x', function(d){
+					  	return d[1] * imgBox.width
+					  })
+					  .attr('y', function(d){
+					  	return d[2] * imgBox.height
+					  })
+					  .style('fill', 'none')
+					  .style('stroke', function(d){
+					  	return G_liColor[d[0]]
+					 })
+					 .style('stroke-width', '5px')			
+				})
+			}
 		}
-		g_liLabel = [];
+		var i = 0, howManyTimes = 2;
+		function f() {
+		    i++;
+		    if( i < howManyTimes ){
+		        setTimeout( updateCover, 500 );
+		    }
+		}
+		f();
+
 		g_Pos1 = g_Pos2 = []
 	}
 	function successSave(response, self){
@@ -102,11 +204,25 @@
 	}
 	function updateCover(){
 		imgBox = $('img')[0].getBoundingClientRect()
-		console.log(' img box ', imgBox)
 		d3.select('svg')
 		  .style('width', imgBox.width)
 		  .style('height', imgBox.height);
+
+		  d3.selectAll('.labeled')	
+		  .attr('width', function(d){
+		  	return d[3] * imgBox.width
+		  })
+		  .attr('height', function(d){
+		  	return d[4] * imgBox.height
+		  })
+		  .attr('x', function(d){
+		  	return d[1] * imgBox.width
+		  })
+		  .attr('y', function(d){
+		  	return d[2] * imgBox.height
+		  })	
 	}
+
 	function initBrush(){
 
 		d3.select('svg')
@@ -156,43 +272,45 @@
 
 <script type="text/javascript">	
 
-	var mapLabel = {
-		'body': ['#ff0000', 0], 
-		'label':['#00ff00', 1], 
-		'text': ['#0000ff', 2],
-		'decoration': ['#f0b100', 3]
-	}
+	function setLabel(labelName, pos1, pos2){
 
-	function setLabel(labelName){
+		if(pos1 == undefined && pos2 == undefined){
+			pos1 = g_Pos1
+			pos2 = g_Pos2
+		}
+
 		console.log(' labelName ', labelName);
 
-		if(g_Pos1 == g_Pos2){
+		if(pos1 == pos2){
 			alert('please define rect')
 			return 
 		}
 
 		d3.select('#dragRect')
-		  .style('stroke', mapLabel[labelName][0]);
+		  .style('stroke', G_liColor[G_liLabel.indexOf(labelName)]);
 
 		var dragBox = $('#dragRect')[0].getBoundingClientRect()
 		var imgBox = $('img')[0].getBoundingClientRect()
-		var left = g_Pos1[0] < g_Pos2[0] ? g_Pos1[0] : g_Pos2[0]
-		var top = g_Pos1[1] < g_Pos2[1] ? g_Pos1[1] : g_Pos2[1]
-		var width =  (g_Pos1[0] > g_Pos2[0] ? g_Pos1[0] : g_Pos2[0]) - left
-		var height = (g_Pos1[1] > g_Pos2[1] ? g_Pos1[1] : g_Pos2[1]) - top
+		var left = pos1[0] < pos2[0] ? pos1[0] : pos2[0]
+		var top = pos1[1] < pos2[1] ? pos1[1] : pos2[1]
+		var width =  (pos1[0] > pos2[0] ? pos1[0] : pos2[0]) - left
+		var height = (pos1[1] > pos2[1] ? pos1[1] : pos2[1]) - top
 		
 		if(g_liLabel.length > 0){
+
+			console.log(' exist ', g_liLabel);
+			
 			var lastOne = g_liLabel[g_liLabel.length - 1]
 			
 			if(lastOne[1] - (left/imgBox.width) < 1e-6 && lastOne[2] - (top/imgBox.height) < 1e-6 && lastOne[3] - (width/imgBox.width) < 1e-6 && lastOne[4] - height/imgBox.height < 1e-6){
 
-				console.log('[2] ', mapLabel[labelName][1])
+				console.log('[2] ', 'here?!', lastOne, left, top, width, height)
 
-				g_liLabel[g_liLabel.length - 1][0] = mapLabel[labelName][1];
+				g_liLabel[g_liLabel.length - 1][0] = G_liLabel.indexOf(labelName)
 
 				d3.select('#labeled-' + g_liLabel.length)
 				  .style('fill', 'none')
-				  .style('stroke', mapLabel[labelName][0])
+				  .style('stroke',G_liColor[G_liLabel.indexOf(labelName)])
 
 				 console.log('global !!', g_liLabel);
 
@@ -200,9 +318,8 @@
 			}
 		}
 
-
 		g_liLabel.push(
-			[mapLabel[labelName][1], left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height]
+			[G_liLabel.indexOf(labelName), left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height]
 		)
 
 		console.log(' glabel ', g_liLabel);
@@ -216,10 +333,11 @@
 		  .attr('x', left)
 		  .attr('y', top)
 		  .style('fill', 'none')
-		  .style('stroke', mapLabel[labelName][0])
+		  .style('stroke', G_liColor[G_liLabel.indexOf(labelName)])
+		  .style('stroke-width', '5px')
 
-		console.log('g_Pos1', g_Pos1, g_Pos2)
-		console.log('rect', g_labelImgName, left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height)
+		// console.log('g_Pos1', pos2, pos2)
+		// console.log('rect', g_labelImgName, left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height)
 
 	}
 </script>

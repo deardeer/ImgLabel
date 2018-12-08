@@ -4,6 +4,7 @@ from tornado.options import options
 
 import pymongo
 from pymongo import MongoClient
+from os.path import basename
 
 import setting
 
@@ -21,9 +22,9 @@ import glob
 
 import pandas as ps
 
-g_DF = ps.read_csv('./imglib/labellist.csv');
-g_liLabeledImg = list(g_DF['name'])
-g_LabelFile = open('./imglib/labellist.csv', 'a')
+# g_DF = ps.read_csv('./imglib/labellist.csv');
+# g_liLabeledImg = list(g_DF['name'])
+# g_LabelFile = open('./imglib/labellist.csv', 'a')
 
 class TestHandler(tornado.web.RequestHandler):
     def get(self, word):
@@ -41,18 +42,39 @@ class SaveHandler(tornado.web.RequestHandler):
 		print(self.get_argument('name'))
 		fileName = self.get_argument('name')
 		liLabel = json.loads(self.get_argument('labels'));
-		labelFile = open('./imglib/labels/' + fileName.split('.')[0] + '.txt', 'w')
-		if((fileName in g_liLabeledImg) == False):
-			print('labeled')
-			g_LabelFile.write(fileName + '\n')
+		labelFile = open('./imglabel/' + fileName.split('.')[0] + '.txt', 'w')
+		print('Save Label ', './imglabel/' + fileName.split('.')[0] + '.txt')
+		conStr = ' '
 		for label in liLabel:
-			print(str(label[0]) + ','  + str(label[1]) + ',' + str(label[2]) 
-				+ ',' + str(label[3]) + ',' + str(label[4]))
-			labelFile.write(str(label[0]) + ','  + str(label[1]) + ',' + str(label[2]) 
-				+ ',' + str(label[3]) + ',' + str(label[4]) + '\n')
+			print(str(label[0]) + conStr  + str(label[1]) + conStr + str(label[2]) 
+				+ conStr + str(label[3]) + conStr + str(label[4]))
+			labelFile.write(str(label[0]) + conStr  + str(label[1]) + conStr + str(label[2]) 
+				+ conStr + str(label[3]) + conStr + str(label[4]) + '\n')
 		labelFile.close();
 		print('ok')
 		self.write({'ok': 'yes'});
+
+
+class GetHandler(tornado.web.RequestHandler):
+	def post(self):
+		self.set_header('Access-Control-Allow-Origin', '*')
+		print(self.get_argument('name'))
+		fileName = self.get_argument('name')		
+		labelFile = open('./imglabel/' + fileName.split('.')[0] + '.txt', 'r')
+		liLabel = []
+		for line_of_text in labelFile:
+			if(line_of_text != '\n'):
+				label = line_of_text.split(' ')[0]
+				labelInfo = [int(label)]
+				xywh = [float(x) for x in line_of_text.split(' ')[1:]]
+				labelInfo += xywh
+				liLabel.append(labelInfo)
+				# print('label', label, 'xywh', xywh, type(xywh), len(xywh))
+				# mapLabelInfo = [int(label), xywh]
+		print('line_of_text', liLabel)
+		labelFile.close();
+		print('ok')
+		self.write({'labels': liLabel});
 
 class ImgHandler(tornado.web.RequestHandler):
 	def get(self):
@@ -61,25 +83,28 @@ class ImgHandler(tornado.web.RequestHandler):
 
 	def post(self):
 
-		print('get imgs', self.static_url('./imglib/info.csv'))
+		# print('get imgs', self.static_url('./imglib/info.csv'))
 
 		imgList = glob.glob("./imglib/*.jpg")
 
 		# df_img = ps.read_csv('./imglib/labeled.csv')
 		# imgList = list(df_img['name'])
-		# print('img list', imgList[0: 5], len(imgList))
-		x = []
+		x = {}
 		# reader = 0
 		for img in imgList:
-   			imgName = basename(img)
-   			x.append(imgName)
-			# if(reader >= 320 and reader < 330):
-			# if(type(img) == float and math.isnan(img)):
-			# 	print(img, type(img))
-			# 	continue
-			# print(img, type(img))
-			# reader += 1
+   			imgName = basename(img).split('.')[0]
+   			x[imgName] = img
+		
+		labelList = glob.glob('./imglabel/*.txt')
+
+		print('img list', imgList[0: 5], len(imgList))
+
+		y = {}
+		for fileDir in labelList:
+   			fileName = basename(fileDir).split('.')[0]
+   			y[fileName] = fileDir
+		
 			
 		self.set_header('Access-Control-Allow-Origin', '*')
-		self.write({'imgList': x})
+		self.write({'img': x, 'label': y})
 
