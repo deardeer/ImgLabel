@@ -1,7 +1,7 @@
 <head>
 	<style type="text/css">
 		button{
-			height: 100px
+			height: 50px
 		}
 	</style>
 	<script type="text/javascript"></script>
@@ -9,19 +9,22 @@
 
 <body>
 	<div style="width: 100%; position: absolute;">
-		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:400px"/>
+		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:600px"/>
 		<svg id="coversvg" style="background:#ff00002b; position: absolute; left: 0px; top: 0px">
 			<rect id='dragRect' style="stroke: black; stroke-width: 1px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
 		</svg>
 	</div>
 
-	<div style="position: absolute; float: right;right:70%;">
-		<li id="labelList">
-			<!-- <button id="bar" label="bar" onclick='setLabel("bar")' style="background: #ff0000; height:50px">bar</button>
-			<button id="pie" label="label" onclick='setLabel("pie")' style="background: #00ff00; height:50px">pie</button>
-			<button id="map" label="label" onclick='setLabel("map")' style="background: #00ff00; height:50px">map</button>
-			<button id="text" label="text" onclick='setLabel("text")' style="background: #0000ff; height:50px">text</button> -->
-			<!-- <button id="decoration" label="decoration" onclick='setLabel("decoration")' style="background: #f0b100; height:50px">decoration</button> -->
+	<div style="position: absolute; float: right;right:30%;">
+		<li id="number"> Number
+		</li>
+		<li id="letter"> Letter
+		</li>
+		<li id="arrow"> Arrow
+		</li>
+		<li id="textbox"> Textbox
+		</li>
+		<li id="icon"> Icon
 		</li>
 		<button id="nextimg" onclick='nextImg()'>Next Img</button>
 		<button id="updateimg" onclick='updateCover()'>Update Box</button>
@@ -35,14 +38,47 @@
 <script type="text/javascript" src="./lib/lurlquery.js"></script>
 
 <script type="text/javascript">
-	
-	G_liLabel = ['pie', 'bar', 'map', 'text',  'modi']
-	G_liColor = ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628']
+		
+	G_mapLabel = {
+		'number': [],
+		'letter': [],
+		'arrow': [],
+		'textbox': ['textbox'],
+		'icon': ['icon']
+	}
 
-	for(var i = 0; i < G_liLabel.length; i ++){
-		var str_temp = '<button id="' + G_liLabel[i] + '" label="' + G_liLabel[i] + '" onclick=\'setLabel("' + G_liLabel[i] + '")\' style="margin:2px; background:' + G_liColor[i] + '">' + G_liLabel[i] + '</button>'
-		console.log(' string ', str_temp)
-		document.getElementById('labelList').innerHTML += str_temp
+	for(var i = 0; i < 10; i ++){
+		G_mapLabel['number'].push('' + i)
+	}
+
+	var mapLetter = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g'}
+	for(var i = 0; i < Object.keys(mapLetter).length; i ++){
+		G_mapLabel['letter'].push('' + mapLetter[i]);
+	}
+
+	var mapArrow = {0: 'up', 1: 'left', 2: 'down', 3: 'right'}
+	for(var i = 0; i < 4; i ++){
+		G_mapLabel['arrow'].push('' + mapArrow[i]);
+	}
+
+	G_liLabel = ['pie', 'bar', 'map', 'text',  'modi']
+	G_liColor =  ['#e41a1c','#377eb8','#4daf4a','#984ea3','#ff7f00','#ffff33','#a65628']
+
+	for(var key in G_mapLabel){
+		var liLabel = G_mapLabel[key]
+		for(var i = 0; i < liLabel.length; i ++){
+			var id_temp = key + '-' + liLabel[i];
+			var name = liLabel[i]
+			var color_temp = G_liColor[i%G_liColor.length];
+			if(key == 'icon')
+				color_temp = '#dd3497'
+			if(key == 'textbox')
+				color_temp = '#000000'
+			var str_temp = '<button id="' + id_temp + '" label="' + id_temp + '" onclick=\'setLabel("' + id_temp + '")\' style="margin:2px; background:' + color_temp + '">' + name + '</button>'
+			// console.log(' string ', str_temp, key, document.getElementById(key).innerHTML )
+			document.getElementById(key).innerHTML += str_temp
+		}
+		document.getElementById(key).innerHTML += '<br>'
 	}
 
 	g_Reader = -1
@@ -145,11 +181,21 @@
 			alert('finished')
 		}else{
 			g_labelImgName = g_liImg[g_Reader]
-			console.log("[current img] ", g_Reader, g_labelImgName, g_liLabeledImg)
-			$('img').attr('src', g_mapImgNameDir[g_labelImgName])
-			if(g_liLabeledImg.indexOf(g_labelImgName) != -1){
-				console.log('[exist label] ', './imglabel/' + g_labelImgName + '.txt')
 
+			while(g_liLabeledImg.indexOf(g_labelImgName) != -1){
+				g_Reader += 1
+				if(g_liImg.length <= g_Reader){
+					g_Reader = 0
+				}
+				g_labelImgName = g_liImg[g_Reader]
+			}
+			console.log("[current img] ", g_liImg, g_Reader, g_labelImgName, g_liLabeledImg)
+			$('img').attr('src', g_mapImgNameDir[g_labelImgName])
+			// if(){
+
+				// console.log('[exist label] ', './imglabel/' + g_labelImgName + '.txt')
+
+				/*
 				var formData = new FormData()
 				formData.append('name', g_labelImgName);
 				lSendUrl('POST', 'http://localhost:20343/get', formData, function(response){
@@ -186,7 +232,8 @@
 					 })
 					 .style('stroke-width', '5px')			
 				})
-			}
+				*/
+			// }
 		}
 		var i = 0, howManyTimes = 2;
 		function f() {
@@ -272,22 +319,25 @@
 
 <script type="text/javascript">	
 
-	function setLabel(labelName, pos1, pos2){
+	function setLabel(labelId, pos1, pos2){
 
 		if(pos1 == undefined && pos2 == undefined){
 			pos1 = g_Pos1
 			pos2 = g_Pos2
 		}
 
-		console.log(' labelName ', labelName);
+		console.log(' labelName ', labelId);
 
 		if(pos1 == pos2){
 			alert('please define rect')
 			return 
 		}
 
+		var color = d3.select('#' + labelId).style('background-color')
+
 		d3.select('#dragRect')
-		  .style('stroke', G_liColor[G_liLabel.indexOf(labelName)]);
+		  .style('stroke', color)
+		  // G_liColor[G_liLabel.indexOf(labelName)]);
 
 		var dragBox = $('#dragRect')[0].getBoundingClientRect()
 		var imgBox = $('img')[0].getBoundingClientRect()
@@ -306,11 +356,11 @@
 
 				console.log('[2] ', 'here?!', lastOne, left, top, width, height)
 
-				g_liLabel[g_liLabel.length - 1][0] = G_liLabel.indexOf(labelName)
+				g_liLabel[g_liLabel.length - 1][0] = G_liLabel.indexOf(labelId)
 
 				d3.select('#labeled-' + g_liLabel.length)
 				  .style('fill', 'none')
-				  .style('stroke',G_liColor[G_liLabel.indexOf(labelName)])
+				  .style('stroke', color)
 
 				 console.log('global !!', g_liLabel);
 
@@ -318,8 +368,9 @@
 			}
 		}
 
+		var key_temp = labelId.split('-')[0], value_temp = labelId.split('-')[1]
 		g_liLabel.push(
-			[G_liLabel.indexOf(labelName), left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height]
+			[key_temp, value_temp, (left + width*0.5)/imgBox.width, (top + height * 0.5)/imgBox.height, width/imgBox.width, height/imgBox.height]
 		)
 
 		console.log(' glabel ', g_liLabel);
@@ -333,7 +384,7 @@
 		  .attr('x', left)
 		  .attr('y', top)
 		  .style('fill', 'none')
-		  .style('stroke', G_liColor[G_liLabel.indexOf(labelName)])
+		  .style('stroke', color)
 		  .style('stroke-width', '5px')
 
 		// console.log('g_Pos1', pos2, pos2)

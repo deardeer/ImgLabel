@@ -46,10 +46,10 @@ class SaveHandler(tornado.web.RequestHandler):
 		print('Save Label ', './imglabel/' + fileName.split('.')[0] + '.txt')
 		conStr = ' '
 		for label in liLabel:
-			print(str(label[0]) + conStr  + str(label[1]) + conStr + str(label[2]) 
-				+ conStr + str(label[3]) + conStr + str(label[4]))
+			print(str(label[0]) + conStr + str(label[1]) + conStr + str(label[2]) 
+				+ conStr + str(label[3]) + conStr + str(label[4]) + conStr + str(label[5]))
 			labelFile.write(str(label[0]) + conStr  + str(label[1]) + conStr + str(label[2]) 
-				+ conStr + str(label[3]) + conStr + str(label[4]) + '\n')
+				+ conStr + str(label[3]) + conStr + str(label[4]) + conStr + str(label[5]) + '\n')
 		labelFile.close();
 		print('ok')
 		self.write({'ok': 'yes'});
@@ -64,12 +64,13 @@ class GetHandler(tornado.web.RequestHandler):
 		liLabel = []
 		for line_of_text in labelFile:
 			if(line_of_text != '\n'):
-				label = line_of_text.split(' ')[0]
+				labelType = line_of_text.split(' ')[0]
+				label = line_of_text.split(' ')[1]
 				labelInfo = [int(label)]
-				xywh = [float(x) for x in line_of_text.split(' ')[1:]]
+				xywh = [float(x) for x in line_of_text.split(' ')[2:]]
 				labelInfo += xywh
-				liLabel.append(labelInfo)
-				# print('label', label, 'xywh', xywh, type(xywh), len(xywh))
+				liLabel.append([labelType, label])
+				print('label', label, labelInfo, 'xywh', xywh, type(xywh), len(xywh), line_of_text.split(' '))
 				# mapLabelInfo = [int(label), xywh]
 		print('line_of_text', liLabel)
 		labelFile.close();
@@ -77,6 +78,7 @@ class GetHandler(tornado.web.RequestHandler):
 		self.write({'labels': liLabel});
 
 class ImgHandler(tornado.web.RequestHandler):
+
 	def get(self):
 		print('get imgs')
 		self.write('ok')
@@ -90,6 +92,8 @@ class ImgHandler(tornado.web.RequestHandler):
 		# df_img = ps.read_csv('./imglib/labeled.csv')
 		# imgList = list(df_img['name'])
 		x = {}
+		# x.push('./imglib/002834.jpg')
+		
 		# reader = 0
 		for img in imgList:
    			imgName = basename(img).split('.')[0]
@@ -100,6 +104,8 @@ class ImgHandler(tornado.web.RequestHandler):
 		print('img list', imgList[0: 5], len(imgList))
 
 		y = {}
+		# y.push('./imglabel/002834.txt')
+
 		for fileDir in labelList:
    			fileName = basename(fileDir).split('.')[0]
    			y[fileName] = fileDir
