@@ -26,6 +26,8 @@
 		</li>
 		<li id="icon"> Icon
 		</li>
+		<li id="title"> Title
+		</li>
 		<button id="nextimg" onclick='nextImg()'>Next Img</button>
 		<button id="updateimg" onclick='updateCover()'>Update Box</button>
 		<br>
@@ -44,7 +46,8 @@
 		'letter': [],
 		'arrow': [],
 		'textbox': ['textbox'],
-		'icon': ['icon']
+		'icon': ['icon'],
+		'title': ['title']
 	}
 
 	for(var i = 0; i < 10; i ++){
@@ -56,8 +59,8 @@
 		G_mapLabel['letter'].push('' + mapLetter[i]);
 	}
 
-	var mapArrow = {0: 'up', 1: 'left', 2: 'down', 3: 'right'}
-	for(var i = 0; i < 4; i ++){
+	var mapArrow = {0: 'up', 1: 'left', 2: 'down', 3: 'right', 4: 'up-right', 5: 'up-left', 6: 'down-left', 7: 'down-right'}
+	for(var i = 0; i < Object.keys(mapArrow).length; i ++){
 		G_mapLabel['arrow'].push('' + mapArrow[i]);
 	}
 
