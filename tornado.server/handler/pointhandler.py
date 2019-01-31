@@ -42,8 +42,8 @@ class SaveHandler(tornado.web.RequestHandler):
 		print(self.get_argument('name'))
 		fileName = self.get_argument('name')
 		liLabel = json.loads(self.get_argument('labels'));
-		labelFile = open('./imglabel/' + fileName.split('.')[0] + '.txt', 'w')
-		print('Save Label ', './imglabel/' + fileName.split('.')[0] + '.txt')
+		labelFile = open('./imglib/' + fileName.split('.')[0] + '.txt', 'w')
+		print('Save Label ', './imglib/' + fileName.split('.')[0] + '.txt')
 		conStr = ' '
 		for label in liLabel:
 			print(str(label[0]) + conStr + str(label[1]) + conStr + str(label[2]) 
@@ -60,7 +60,7 @@ class GetHandler(tornado.web.RequestHandler):
 		self.set_header('Access-Control-Allow-Origin', '*')
 		print(self.get_argument('name'))
 		fileName = self.get_argument('name')		
-		labelFile = open('./imglabel/' + fileName.split('.')[0] + '.txt', 'r')
+		labelFile = open('./imglib/' + fileName.split('.')[0] + '.txt', 'r')
 		liLabel = []
 		for line_of_text in labelFile:
 			if(line_of_text != '\n'):
@@ -99,7 +99,7 @@ class ImgHandler(tornado.web.RequestHandler):
    			imgName = basename(img).split('.')[0]
    			x[imgName] = img
 		
-		labelList = glob.glob('./imglabel/*.txt')
+		labelList = glob.glob('./imglib/*.txt')
 
 		print('img list', imgList[0: 5], len(imgList))
 
