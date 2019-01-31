@@ -9,14 +9,16 @@
 
 <body>
 	<div style="width: 100%; position: absolute;">
-		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:600px"/>
+		<img src="./imglib/1140.jpg" style="width:600px"/>
 		<svg id="coversvg" style="background:#ff00002b; position: absolute; left: 0px; top: 0px">
 			<rect id='dragRect' style="stroke: black; stroke-width: 1px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
 		</svg>
 	</div>
 
-	<div style="position: absolute; float: right;right:30%;">
+	<div style="position: absolute; float: right;right:15%;">
 		<li id="number"> Number
+		</li>
+		<li id="z_number"> z_Number
 		</li>
 		<li id="letter"> Letter
 		</li>
@@ -43,6 +45,7 @@
 		
 	G_mapLabel = {
 		'number': [],
+		'z_number': [],
 		'letter': [],
 		'arrow': [],
 		'textbox': ['textbox'],
@@ -52,6 +55,11 @@
 
 	for(var i = 0; i < 10; i ++){
 		G_mapLabel['number'].push('' + i)
+	}
+
+	var mapZ_number = {0:'00', 1:'01', 2:'01', 3:'03', 4:'04', 5:'05', 6:'06', 7:'07', 8:'08', 9:'09'}
+	for(var i = 0; i < Object.keys(mapZ_number).length; i ++){
+		G_mapLabel['z_number'].push('' + mapZ_number[i]);
 	}
 
 	var mapLetter = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g'}
