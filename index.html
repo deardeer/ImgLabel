@@ -9,13 +9,13 @@
 
 <body>
 	<div style="width: 100%; position: absolute;">
-		<img src="./imglib/1140.jpg" style="width:600px"/>
+		<img src="./imglib/young-black-guy-represents-share-260nw-284700707.jpg" style="width:600px"/>
 		<svg id="coversvg" style="background:#ff00002b; position: absolute; left: 0px; top: 0px">
 			<rect id='dragRect' style="stroke: black; stroke-width: 1px; fill: none; x: 0; y: 0; width: 0px; height: 0px"></rect>
 		</svg>
 	</div>
 
-	<div style="position: absolute; float: right;right:15%;">
+	<div style="position: absolute; float: right;right:20%;">
 		<li id="number"> Number
 		</li>
 		<li id="z_number"> z_Number
@@ -34,6 +34,11 @@
 		<button id="updateimg" onclick='updateCover()'>Update Box</button>
 		<br>
 		<span id="infoSpan"></span>
+		<br>
+		<button id="showlabeld" onclick='showLabeled()'>Show Labeled</button>
+		<button id="nextshowimg" onclick='nextLabelImg()'>Next Labeled Img</button>
+		<br>
+		<span id="labelInfoSpan"></span>
 	</div>
 </body>
 
@@ -42,6 +47,9 @@
 <script type="text/javascript" src="./lib/lurlquery.js"></script>
 
 <script type="text/javascript">
+
+	G_showStatus = false;
+	G_showIndex = 0
 		
 	G_mapLabel = {
 		'number': [],
@@ -56,7 +64,7 @@
 	for(var i = 0; i < 10; i ++){
 		G_mapLabel['number'].push('' + i)
 	}
-
+	
 	var mapZ_number = {0:'00', 1:'01', 2:'02', 3:'03', 4:'04', 5:'05', 6:'06', 7:'07', 8:'08', 9:'09',10:'10'}
 	for(var i = 0; i < Object.keys(mapZ_number).length; i ++){
 		G_mapLabel['z_number'].push('' + mapZ_number[i]);
@@ -93,6 +101,7 @@
 	}
 
 	g_Reader = -1
+	g_LabeledReader = -1;
 
 	g_liImg = []
 	g_liLabeledImg = []
@@ -159,7 +168,67 @@
 		nextImg();
 	}
 
+	function nextLabelImg(){
+		if(!G_showStatus)
+			return;
+		console.log('next labelimg');
+		g_LabeledReader += 1;
+		if(g_LabeledReader >= g_liLabeledImg.length){
+			alert('already show all labeled images');
+			g_LabeledReader = 0;
+		}
+		document.getElementById('labelInfoSpan').innerHTML = ('#labeled img=' + g_liLabeledImg.length +' Now: ' + g_liLabeledImg[g_LabeledReader]
+		 + '.jpg');
+		$('img').attr('src', g_mapImgNameDir[g_liLabeledImg[g_LabeledReader]])
+
+		var i = 0, howManyTimes = 2;
+		function f() {
+		    i++;
+		    if( i < howManyTimes ){
+		        setTimeout( updateCover, 500 );
+		    }
+		}
+		f();
+
+		showLabels(g_mapImgNameDir[g_liLabeledImg[g_LabeledReader]]);
+	}
+
+	function showLabels(labelTxt){
+		console.log(" show labels ");
+
+		var formData = new FormData()
+		formData.append('name', g_liLabeledImg[g_LabeledReader])
+		lSendUrl('POST', 'http://localhost:20343/open', formData, successGetLabeledtxt)
+	}
+
+	function successGetLabeledtxt(response, self){
+		console.log(' get labeled txt ');
+		console.log('labels', response['labels']);
+
+		d3.selectAll('.exitlabeled')
+		  .remove();
+
+		var liLabel = response['labels'];
+		for (var i = 0; i < liLabel.length; i++) {
+			var labelInfo = liLabel[i];
+			var pos1, pos2;
+			var box = $('img')[0].getClientRects()[0];
+			pos1 = [
+				box.x + box.width * labelInfo[2] - box.width * labelInfo[4] * 0.5,
+				box.y + box.height * labelInfo[3] - box.height * labelInfo[5] * 0.5,
+			];
+			pos2 = [
+				box.x + box.width * labelInfo[2] + box.width * labelInfo[4] * 0.5,
+				box.y + box.height * labelInfo[3] + box.height * labelInfo[5] * 0.5,
+			]
+			drawLabel(labelInfo, pos1, pos2);
+		};
+	}
+
 	function nextImg(){
+
+		if(G_showStatus)
+			return;
 
 		document.getElementById('infoSpan').innerHTML = ('#img=' + g_liImg.length +' #label=' + g_liLabeledImg.length + ' #unlabel=' + g_liUnLabelImg.length);
 
@@ -259,25 +328,47 @@
 	}
 	function successSave(response, self){
 		console.log(response);
+		g_liLabeledImg.push(response['save']);
+		document.getElementById('infoSpan').innerHTML = ('#img=' + g_liImg.length +' #label=' + g_liLabeledImg.length + ' #unlabel=' + g_liUnLabelImg.length);
+	}
+	function showLabeled(){
+		G_showStatus = !G_showStatus;
+		console.log('show labeled', G_showStatus);
+		if(G_showStatus){
+			document.getElementById('showlabeld').innerHTML = 'Return to Label'
+			nextLabelImg();
+		}else{
+			document.getElementById('showlabeld').innerHTML = 'Show Labeled';
+			$('img').attr('src', g_mapImgNameDir[g_liImg[g_Reader]])
+			d3.selectAll('.exitlabeled').remove();
+		}
+		// var imgList = getLabeledImgList();
 	}
 	function updateCover(){
+
 		imgBox = $('img')[0].getBoundingClientRect()
 		d3.select('svg')
 		  .style('width', imgBox.width)
 		  .style('height', imgBox.height);
 
-		  d3.selectAll('.labeled')	
-		  .attr('width', function(d){
-		  	return d[3] * imgBox.width
+		  d3.selectAll('.exitlabeled')	
+		  .attr('width', function(){
+		  	var data = d3.select(this).attr('data').split(',');
+		  	// textbox,textbox,0.84,0.3641666666666667,0.2,0.07166666666666667
+		  	console.log('dtat' , data, Number(data[4]), Number(data[4]) * imgBox.width);
+		  	return Number(data[4]) * imgBox.width
 		  })
-		  .attr('height', function(d){
-		  	return d[4] * imgBox.height
+		  .attr('height', function(){
+		  	var data = d3.select(this).attr('data').split(',');
+		  	return Number(data[5]) * imgBox.height
 		  })
-		  .attr('x', function(d){
-		  	return d[1] * imgBox.width
+		  .attr('x', function(){
+		  	var data = d3.select(this).attr('data').split(',');
+		  	return Number(data[2]) * imgBox.width - Number(data[4]) * imgBox.width * 0.5
 		  })
 		  .attr('y', function(d){
-		  	return d[2] * imgBox.height
+		  	var data = d3.select(this).attr('data').split(',');
+		  	return Number(data[3]) * imgBox.height - Number(data[5]) * imgBox.height * 0.5
 		  })	
 	}
 
@@ -401,5 +492,34 @@
 		// console.log('g_Pos1', pos2, pos2)
 		// console.log('rect', g_labelImgName, left/imgBox.width, top/imgBox.height, width/imgBox.width, height/imgBox.height)
 
+	}
+
+	function drawLabel(labelInfo, pos1, pos2){
+
+		console.log(' labelinfo ', labelInfo, labelInfo.length);
+
+		var imgBox = $('img')[0].getBoundingClientRect()
+
+		var left = pos1[0] < pos2[0] ? pos1[0] : pos2[0]
+		var top = pos1[1] < pos2[1] ? pos1[1] : pos2[1]
+		var width =  (pos1[0] > pos2[0] ? pos1[0] : pos2[0]) - left
+		var height = (pos1[1] > pos2[1] ? pos1[1] : pos2[1]) - top
+
+
+		var color = 'black'
+		if(d3.select('#' + labelInfo[0] + '-' + labelInfo[1]).empty() == false)
+			color = d3.select('#' + labelInfo[0] + '-' + labelInfo[1]).style('background-color')
+
+		d3.select('svg')
+		  .append('rect')
+		  .attr('class', 'exitlabeled')
+		  .attr('data', labelInfo)
+		  .attr('width', width)
+		  .attr('height', height)
+		  .attr('x', left)
+		  .attr('y', top)
+		  .style('fill', 'none')
+		  .style('stroke', color)
+		  .style('stroke-width', '5px')
 	}
 </script>
